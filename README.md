@@ -1,33 +1,18 @@
 **Important**: Dockbit API is under development and has not yet been officially released. The specification below might (and most probably will) change. Follow us on [Twitter](https://twitter.com/dockbit) to get notified about changes to our platform API.
 
-## Authentication
+## API format
 
-In order to authenticate your requests, log in to [Dockbit](https://dockbit.com), navigate to [Account Settings](https://dockbit.com/settings) and copy your personal _API key_. For convenience, let's export it as the environment variable:
+The API fully follows version 1.0 of the [JSON API](http://jsonapi.org/) specificiation.
 
-    export DOCKBIT_API_KEY=<Paste your API key>
+## Authorization
 
-You can now pass the Authorization header with the variable. For example, to test you can successfully authenticate, let's play a bit of 🏓
+In order to authenticate your requests, log in to [Dockbit](https://dockbit.com), navigate to [Account Settings](https://dockbit.com/settings) and copy your personal _API key_. For convenience, let's export it as an environment variable:
 
-    curl https://dockbit.com/api/ping \
-         -H "Accept: application/vnd.dockbit+json; version=1" \
-         -H "Authorization: Bearer $DOCKBIT_API_KEY"
-
-```
-=> pong
+```bash
+export DOCKBIT_API_KEY=<Paste your API key here>
 ```
 
-## API version
-
-As you might have noticed earlier, the API version was provided as the _Accept_ request-header in this format:
-
-    Accept: application/vnd.dockbit+json; version=1
-
-
-## JSON format
-
-The API data is formatted as JSON. There is no root element and we use ```snake_case``` for all object keys. For every _POST_ and _PUT_ request, you will need to send the _Content-Type_ header in this format:
-
-    Content-Type: application/json
+You can now pass the key in the Authorization header as `Authorization: Bearer $DOCKBIT_API_KEY`. See below for example requests.
 
 ## API endpoints
 
@@ -37,37 +22,146 @@ The following endpoints are available:
 
 #### Create deployment
 
-**```POST /api/<team_name>/<pipeline_name>/deployments.json```**
+**```POST /api/v1/deployments```**
 
 Example request:
 
-    curl -X POST https://dockbit.com/api/SpaceCo/rocket-app/deployments.json \
-         -H "Accept: application/vnd.dockbit+json; version=1" \
-         -H "Authorization: Bearer $DOCKBIT_API_KEY" \
-         -H "Content-Type: application/json" \
-         -d "{\"ref\":\"master\"}"
+```bash
+curl -X POST https://dockbit.com/api/v1/deployments \
+     -H "Accept: application/vnd.api+json" \
+     -H "Authorization: Bearer $DOCKBIT_API_KEY" \
+     -H "Content-Type: application/vnd.api+json" \
+     -d '{"data":{"type":"deployments","attributes":{"ref":"master"},"relationships":{"pipeline":{"data":{"type":"pipelines","id":"1"}},"team":{"data":{"type":"teams","id":"1"}}}}}'
+```
 
 Example response:
 
-    {  
-       "number":50,
-       "ref":"master",
-       "sha":"7e73e7bd9bc32e7a2b23a24b084e22325f577743",
-       "stage_ids":[  
-          "58",
-          "62",
-          "65",
-          "68"
-       ],
-       "created_at":"2016-08-23T21:31:19.722Z",
-       "pipeline_name":"rocket-app",
-       "creator_name":"steve"
-    }
+```json
+{
+   "data":{
+      "id":"1",
+      "type":"deployments",
+      "links":{
+         "self":"https://dockbit.com/api/v1/deployments/1"
+      },
+      "attributes":{
+         "created-at":"2016-12-15T14:12:07.186Z",
+         "number":1,
+         "ref":"master",
+         "sha":"6e65482258ae81327eaea83ee31fd76a38301be6",
+         "stage-ids":[
+            "1"
+         ]
+      },
+      "relationships":{
+         "creator":{
+            "links":{
+               "self":"https://dockbit.com/api/v1/deployments/1/relationships/creator",
+               "related":"https://dockbit.com/api/v1/deployments/1/creator"
+            }
+         },
+         "pipeline":{
+            "links":{
+               "self":"https://dockbit.com/api/v1/deployments/1/relationships/pipeline",
+               "related":"https://dockbit.com/api/v1/deployments/1/pipeline"
+            }
+         },
+         "team":{
+            "links":{
+               "self":"https://dockbit.com/api/v1/deployments/1/relationships/team",
+               "related":"https://dockbit.com/api/v1/deployments/1/team"
+            }
+         }
+      }
+   }
+}
+```
 
+### Teams
+
+#### List teams
+
+**```GET /api/v1/teams```**
+
+Example request:
+
+```bash
+curl https://dockbit.com/api/v1/teams \
+     -H "Accept: application/vnd.api+json" \
+     -H "Authorization: Bearer $DOCKBIT_API_KEY" \
+     -H "Content-Type: application/vnd.api+json"
+```
+
+Example response:
+
+```bash
+{
+   "data":[
+      {
+         "id":"1",
+         "type":"teams",
+         "links":{
+            "self":"https://dockbit.com/api/v1/teams/1"
+         },
+         "attributes":{
+            "name":"Dockbit"
+         },
+         "relationships":{
+            "pipelines":{
+               "links":{
+                  "self":"https://dockbit.com/api/v1/teams/1/relationships/pipelines",
+                  "related":"https://dockbit.com/api/v1/teams/1/pipelines"
+               }
+            }
+         }
+      }
+   ]
+}
+```
+
+#### List team's pipelines
+
+**```GET /api/v1/teams/:team_id/pipelines```**
+
+Example request:
+
+```bash
+curl https://dockbit.com/api/v1/teams/1/pipelines \
+     -H "Accept: application/vnd.api+json" \
+     -H "Authorization: Bearer $DOCKBIT_API_KEY" \
+     -H "Content-Type: application/vnd.api+json"
+```
+
+Example response:
+
+```bash
+{
+   "data":[
+      {
+         "id":"1",
+         "type":"pipelines",
+         "links":{
+            "self":"https://dockbit.com/api/v1/pipelines/1"
+         },
+         "relationships":{
+            "team":{
+               "links":{
+                  "self":"https://dockbit.com/api/v1/pipelines/1/relationships/team",
+                  "related":"https://dockbit.com/api/v1/pipelines/1/team"
+               }
+            },
+            "deployments":{
+               "links":{
+                  "self":"https://dockbit.com/api/v1/pipelines/1/relationships/deployments",
+                  "related":"https://dockbit.com/api/v1/pipelines/1/deployments"
+               }
+            }
+         }
+      }
+   ]
+}
+```
 
 ## Help
 
-If you need help, have a specific feature request or found a bug, please open an issue or [contact us](https://dockbit.com/site/contact). 🤗
-
-
-
+If you need any help, have a specific feature request in mind, or found a bug, please open an issue or [contact us](https://dockbit.com/site/contact). 🤗
